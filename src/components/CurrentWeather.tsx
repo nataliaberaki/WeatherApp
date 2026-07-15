@@ -2,6 +2,7 @@ type CurrentWeatherProps = {
   city: string;
   temperature: number;
   description: string;
+  icon: string;
   windSpeed: number;
   humidity: number;
 };
@@ -10,6 +11,7 @@ function CurrentWeather({
   city,
   temperature,
   description,
+  icon,
   windSpeed,
   humidity,
 }: CurrentWeatherProps) {
@@ -18,6 +20,9 @@ function CurrentWeather({
       <div className="weather-header">
         <h2 id="city">{city}</h2>
         <h1 id="temperature">{temperature}</h1>
+        <span className="weather-icon" aria-hidden="true">
+          {icon}
+        </span>
         <p>{description}</p>
       </div>
       <div className="weather-deatils">

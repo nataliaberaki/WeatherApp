@@ -1,14 +1,8 @@
 import type { Location } from "../types/location";
+import type { WeatherData } from "../types/weather";
 
 type GeocodingResponse = {
   results?: Location[];
-};
-
-export type WeatherData = {
-  temperature: number;
-  windSpeed: number;
-  humidity: number;
-  weatherCode: number;
 };
 
 type ForecastResponse = {
@@ -21,11 +15,19 @@ type ForecastResponse = {
 };
 
 export async function getLocation(city: string): Promise<Location> {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
+  /*const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
     city
-  )}&count=1&language=en&format=json`;
+  )}&count=1&language=en&format=json`;*/
+  const searchParams = new URLSearchParams({
+    name: city,
+    count: "1",
+    language: "en",
+    format: "json",
+  });
 
-  const response = await fetch(url);
+  const response = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?${searchParams}`
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch location");
@@ -45,13 +47,20 @@ export async function getCurrentWeather(
   latitude: number,
   longitude: number
 ): Promise<WeatherData> {
-  const url =
+  /*const url =
     `https://api.open-meteo.com/v1/forecast` +
     `?latitude=${latitude}` +
     `&longitude=${longitude}` +
-    `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`;
+    `&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code`;*/
+  const searchParams = new URLSearchParams({
+    latitude: latitude.toString(),
+    longitude: longitude.toString(),
+    current: "temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code",
+  });
 
-  const response = await fetch(url);
+  const response = await fetch(
+    `https://api.open-meteo.com/v1/forecast?${searchParams}`
+  );
 
   if (!response.ok) {
     throw new Error("Failed to fetch weather");
