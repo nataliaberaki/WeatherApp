@@ -1,10 +1,16 @@
 import { useState } from "react";
 import SearchForm from "./components/SearchForm";
 import CurrentWeather from "./components/CurrentWeather";
-import { getLocation, getCurrentWeather } from "./services/weatherApi";
+import {
+  getLocation,
+  getCurrentWeather,
+  type WeatherData,
+} from "./services/weatherApi";
+import { getWeatherDescription } from "./utils/weatherCode";
 
 function App() {
   const [selectedCity, setSelectedCity] = useState("");
+  const [weather, setWeather] = useState<WeatherData | null>(null); //WeatherData | null meaning either there is data or no data
 
   /*function handleSearch(city: string) {
     setSelectedCity(city);
@@ -14,15 +20,16 @@ function App() {
     try {
       const location = await getLocation(city);
 
-      const weather = await getCurrentWeather(
+      const weatherData = await getCurrentWeather(
         location.latitude,
         location.longitude
       );
 
-      console.log("Location:", location);
-      console.log("Weather:", weather);
+      /*console.log("Location:", location);
+      console.log("Weather:", weather);*/
 
       setSelectedCity(location.name);
+      setWeather(weatherData);
     } catch (error) {
       console.error(error);
     }
@@ -34,13 +41,13 @@ function App() {
 
       <SearchForm onSearch={handleSearch} />
 
-      {selectedCity && (
+      {selectedCity && weather && (
         <CurrentWeather
           city={selectedCity}
-          temperature={18}
-          description="Cloudy"
-          windSpeed={5}
-          humidity={72}
+          temperature={weather.temperature}
+          description={getWeatherDescription(weather.weatherCode)}
+          windSpeed={weather.windSpeed}
+          humidity={weather.humidity}
         />
       )}
     </main>
