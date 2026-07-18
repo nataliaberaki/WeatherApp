@@ -62,7 +62,7 @@ export function getWeatherInfo(code: number) {
   return (
     weatherInfo[code] ?? {
       description: "Unknown weather",
-      icon: "❓",
+      icon: "?",
       background: "default",
     }
   );

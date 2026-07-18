@@ -1,9 +1,10 @@
 import { useState } from "react";
-import SearchForm from "./components/SearchForm";
 import CurrentWeather from "./components/CurrentWeather";
 import { getLocation, getCurrentWeather } from "./services/weatherApi";
 import type { WeatherData } from "./types/weather";
 import { getWeatherInfo } from "./utils/weatherCode";
+import "./styles/app.css";
+import Welcome from "./components/Welcome";
 
 function App() {
   const [selectedCity, setSelectedCity] = useState("");
@@ -47,28 +48,53 @@ function App() {
       setIsLoading(false);
     }
   }
+  function clearWeather() {
+    setSelectedCity("");
+    setWeather(null);
+    setErrorMessage("");
+  }
 
   return (
-    <main>
-      <h1>Weather App</h1>
+    <div className={`app ${weatherInfo?.background ?? "default"}`}>
+      <header className="app-header">
+        <button
+          type="button"
+          className="home-button"
+          onClick={clearWeather}
+          aria-label="Go to home page"
+        >
+          ☁️ Cloudy
+        </button>
+      </header>
 
-      <SearchForm onSearch={handleSearch} />
+      <main className="app-main">
+        {!weather && !isLoading && !errorMessage && (
+          <Welcome onSearch={handleSearch} />
+        )}
 
-      {isLoading && <p>Loading weather...</p>}
+        {isLoading && <p>Loading weather...</p>}
 
-      {errorMessage && <p role="alert">{errorMessage}</p>}
+        {errorMessage && (
+          <p className="error-message" role="alert">
+            {errorMessage}
+          </p>
+        )}
 
-      {selectedCity && weather && !isLoading && (
-        <CurrentWeather
-          city={selectedCity}
-          temperature={weather.temperature}
-          description={weatherInfo.description}
-          icon={weatherInfo.icon}
-          windSpeed={weather.windSpeed}
-          humidity={weather.humidity}
-        />
-      )}
-    </main>
+        {selectedCity && weather && weatherInfo && !isLoading && (
+          <CurrentWeather
+            onClose={clearWeather}
+            city={selectedCity}
+            temperature={weather.temperature}
+            description={weatherInfo.description}
+            icon={weatherInfo.icon}
+            windSpeed={weather.windSpeed}
+            humidity={weather.humidity}
+          />
+        )}
+      </main>
+
+      <footer className="app-footer">Made by Natalia Beraki</footer>
+    </div>
   );
 }
 

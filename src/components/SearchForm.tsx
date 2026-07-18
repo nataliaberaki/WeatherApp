@@ -18,21 +18,27 @@ function SearchForm({ onSearch }: SearchFormProps) {
     }
 
     onSearch(trimmedCity);
+    setCity("");
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <label htmlFor="city">Enter a city...</label>
+    <form className="search-form" onSubmit={handleSubmit}>
+      <label className="sr-only" htmlFor="city-search">
+        Enter a city
+      </label>
 
       <input
-        id="city"
+        id="city-search"
+        className="search-input"
         type="text"
-        placeholder="e.g. Oslo"
+        placeholder="Search for a city..."
         value={city}
         onChange={(event) => setCity(event.target.value)}
       />
 
-      <button type="submit">Search</button>
+      <button className="search-button" type="submit">
+        Search
+      </button>
     </form>
   );
 }

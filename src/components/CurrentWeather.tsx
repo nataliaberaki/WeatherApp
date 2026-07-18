@@ -5,6 +5,7 @@ type CurrentWeatherProps = {
   icon: string;
   windSpeed: number;
   humidity: number;
+  onClose: () => void;
 };
 
 function CurrentWeather({
@@ -14,20 +15,43 @@ function CurrentWeather({
   icon,
   windSpeed,
   humidity,
+  onClose,
 }: CurrentWeatherProps) {
   return (
-    <section className="weather-info">
+    <section className="weather-card">
       <div className="weather-header">
-        <h2 id="city">{city}</h2>
-        <h1 id="temperature">{temperature}</h1>
+        <button
+          className="close-button"
+          onClick={onClose}
+          aria-label="Close Weather"
+        >
+          x
+        </button>
+
+        <h2 className="city-name">{city}</h2>
+        <p className="temperature">{Math.round(temperature)}°</p>
         <span className="weather-icon" aria-hidden="true">
           {icon}
         </span>
-        <p>{description}</p>
+        <p className="weather-description">{description}</p>
       </div>
-      <div className="weather-deatils">
-        <p>Wind: {windSpeed} m/s</p>
-        <p>Humidity: {humidity}%</p>
+
+      <div className="weather-details">
+        <div className="detail-card">
+          <span aria-hidden="true">💨</span>
+          <div>
+            <p className="detail-label">Wind</p>
+            <p className="detail-value">{windSpeed} m/s</p>
+          </div>
+        </div>
+
+        <div className="detail-card">
+          <span aria-hidden="true">💧</span>
+          <div>
+            <p className="detail-label">Humidity</p>
+            <p className="detail-value">{humidity}%</p>
+          </div>
+        </div>
       </div>
     </section>
   );
