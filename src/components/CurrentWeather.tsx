@@ -1,5 +1,6 @@
 type CurrentWeatherProps = {
   city: string;
+  country?: string;
   temperature: number;
   description: string;
   icon: string;
@@ -10,6 +11,7 @@ type CurrentWeatherProps = {
 
 function CurrentWeather({
   city,
+  country,
   temperature,
   description,
   icon,
@@ -29,6 +31,8 @@ function CurrentWeather({
         </button>
 
         <h2 className="city-name">{city}</h2>
+        {country && <p className="weather-country">{country}</p>}
+
         <p className="temperature">{Math.round(temperature)}°</p>
         <span className="weather-icon" aria-hidden="true">
           {icon}

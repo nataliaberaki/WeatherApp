@@ -14,10 +14,36 @@ type ForecastResponse = {
   };
 };
 
+/*loaction suggestions in the search bar */
+export async function getLocationSuggestions(
+  searchTerm: string
+): Promise<Location[]> {
+  const trimmedSearch = searchTerm.trim();
+
+  if (trimmedSearch.length < 2) {
+    return [];
+  }
+
+  const url =
+    `https://geocoding-api.open-meteo.com/v1/search` +
+    `?name=${encodeURIComponent(trimmedSearch)}` +
+    `&count=5` +
+    `&language=en` +
+    `&format=json`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Could not load location suggestions");
+  }
+
+  const data: GeocodingResponse = await response.json();
+
+  return data.results ?? [];
+}
+
+/*fetch city details */
 export async function getLocation(city: string): Promise<Location> {
-  /*const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(
-    city
-  )}&count=1&language=en&format=json`;*/
   const searchParams = new URLSearchParams({
     name: city,
     count: "1",

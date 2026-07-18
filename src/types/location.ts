@@ -1,6 +1,8 @@
 export type Location = {
+  id: number;
   name: string;
-  country: string;
   latitude: number;
   longitude: number;
+  country?: string;
+  admin1?: string;
 };

@@ -4,17 +4,18 @@ import { getLocation, getCurrentWeather } from "./services/weatherApi";
 import type { WeatherData } from "./types/weather";
 import { getWeatherInfo } from "./utils/weatherCode";
 import "./styles/app.css";
+import type { Location } from "./types/location";
 import Welcome from "./components/Welcome";
+import SearchForm from "./components/SearchForm";
 
 function App() {
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
+    null
+  );
+  //const [selectedCity, setSelectedCity] = useState("");
   const [weather, setWeather] = useState<WeatherData | null>(null); //WeatherData | null meaning either there is data or no data
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  /*function handleSearch(city: string) {
-    setSelectedCity(city);
-  }*/
-
   const weatherInfo = weather ? getWeatherInfo(weather.weatherCode) : null;
 
   async function handleSearch(city: string) {
@@ -32,11 +33,11 @@ function App() {
       /*console.log("Location:", location);
       console.log("Weather:", weather);*/
 
-      setSelectedCity(location.name);
+      setSelectedLocation(location);
       setWeather(weatherData);
     } catch (error) {
       setWeather(null);
-      setSelectedCity("");
+      setSelectedLocation(null);
 
       //if error occurs
       if (error instanceof Error) {
@@ -49,7 +50,7 @@ function App() {
     }
   }
   function clearWeather() {
-    setSelectedCity("");
+    setSelectedLocation(null);
     setWeather(null);
     setErrorMessage("");
   }
@@ -80,16 +81,23 @@ function App() {
           </p>
         )}
 
-        {selectedCity && weather && weatherInfo && !isLoading && (
-          <CurrentWeather
-            onClose={clearWeather}
-            city={selectedCity}
-            temperature={weather.temperature}
-            description={weatherInfo.description}
-            icon={weatherInfo.icon}
-            windSpeed={weather.windSpeed}
-            humidity={weather.humidity}
-          />
+        {selectedLocation && weather && weatherInfo && !isLoading && (
+          <section className="weather-results">
+            <div className="results-search">
+              <SearchForm onSearch={handleSearch} />
+            </div>
+
+            <CurrentWeather
+              onClose={clearWeather}
+              city={selectedLocation.name}
+              country={selectedLocation.country}
+              temperature={weather.temperature}
+              description={weatherInfo.description}
+              icon={weatherInfo.icon}
+              windSpeed={weather.windSpeed}
+              humidity={weather.humidity}
+            />
+          </section>
         )}
       </main>
 
