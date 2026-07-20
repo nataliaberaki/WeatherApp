@@ -19,13 +19,15 @@ function CurrentWeather({
   humidity,
   onClose,
 }: CurrentWeatherProps) {
+  // This component only presents normalized weather data from App.
   return (
     <section className="weather-card">
       <div className="weather-header">
         <button
+          type="button"
           className="close-button"
           onClick={onClose}
-          aria-label="Close Weather"
+          aria-label="Close weather"
         >
           x
         </button>

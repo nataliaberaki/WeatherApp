@@ -1,21 +1,17 @@
 import SearchForm from "./SearchForm";
+import QuickSearch from "./QuickSearch";
+import type { Location } from "../types/location";
 
 type WelcomeProps = {
-  onSearch: (city: string) => void;
+  onSearch: (search: string | Location) => void;
+  errorMessage?: string;
 };
 
-const popularCities = [
-  { name: "Oslo", flag: "🇳🇴" },
-  { name: "London", flag: "🇬🇧" },
-  { name: "Paris", flag: "🇫🇷" },
-  { name: "Tokyo", flag: "🇯🇵" },
-  { name: "New York", flag: "🇺🇸" },
-];
-
-function Welcome({ onSearch }: WelcomeProps) {
+function Welcome({ onSearch, errorMessage }: WelcomeProps) {
   return (
     <section className="welcome">
-      <h2 className="welcome-title">Discover weather anywhere</h2>
+      {/* The welcome screen combines free-text search with common shortcuts. */}
+      <h1 className="welcome-title">Discover weather anywhere</h1>
 
       <p className="welcome-text">
         Search for any city to see the current weather conditions
@@ -25,23 +21,13 @@ function Welcome({ onSearch }: WelcomeProps) {
         <SearchForm onSearch={onSearch} />
       </div>
 
-      <div className="quick-search">
-        <h3>Quick search</h3>
+      {errorMessage && (
+        <p className="error-message" role="alert">
+          {errorMessage}
+        </p>
+      )}
 
-        <div className="quick-search-list">
-          {popularCities.map((city) => (
-            <button
-              key={city.name}
-              className="city-btn"
-              type="button"
-              onClick={() => onSearch(city.name)}
-            >
-              <span aria-hidden="true">{city.flag}</span>
-              {city.name}
-            </button>
-          ))}
-        </div>
-      </div>
+      <QuickSearch onSearch={onSearch} />
     </section>
   );
 }

@@ -1,3 +1,4 @@
+// Normalized location fields used by search suggestions and weather requests.
 export type Location = {
   id: number;
   name: string;

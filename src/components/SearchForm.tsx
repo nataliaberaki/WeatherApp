@@ -1,46 +1,111 @@
-import { useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Location } from "../types/location";
 import { getLocationSuggestions } from "../services/weatherApi";
 
 type SearchFormProps = {
-  onSearch: (city: string) => void;
+  onSearch: (search: string | Location) => void;
 };
 
 function SearchForm({ onSearch }: SearchFormProps) {
   const [city, setCity] = useState("");
   const [suggestions, setSuggestions] = useState<Location[]>([]);
-
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
+  const requestId = useRef(0);
+  const inputId = useId();
+  const listId = useId();
 
-  //handles suggestions
-  function handleSuggestionClick(location: Location) {
-    onSearch(location.name);
-    setCity("");
-    setSuggestions([]);
-  }
+  // Debounce typing and cancel the previous request to prevent stale suggestions.
+  useEffect(() => {
+    const trimmedCity = city.trim();
 
-  /*gets the suggestions */
-  async function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const value = event.target.value;
-
-    setCity(value);
-
-    if (value.trim().length < 2) {
-      setSuggestions([]);
+    if (trimmedCity.length < 2) {
       return;
     }
 
-    setIsSuggestionsLoading(true);
+    const currentRequest = ++requestId.current;
+    const controller = new AbortController();
 
-    try {
-      const results = await getLocationSuggestions(value);
-      setSuggestions(results);
-    } finally {
+    const timer = window.setTimeout(async () => {
+      try {
+        const results = await getLocationSuggestions(
+          trimmedCity,
+          controller.signal
+        );
+
+        if (requestId.current === currentRequest) {
+          setSuggestions(results);
+          setActiveSuggestion(-1);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error("Failed to load suggestions", error);
+        }
+      } finally {
+        if (requestId.current === currentRequest) {
+          setIsSuggestionsLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [city]);
+
+  function clearSearch() {
+    requestId.current += 1;
+    setCity("");
+    setSuggestions([]);
+    setActiveSuggestion(-1);
+    setIsSuggestionsLoading(false);
+  }
+
+  function selectSuggestion(location: Location) {
+    onSearch(location);
+    clearSearch();
+  }
+
+  // Keep derived suggestion state in sync while the input changes.
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const value = event.target.value;
+
+    requestId.current += 1;
+    setCity(value);
+    setActiveSuggestion(-1);
+
+    if (value.trim().length < 2) {
+      setSuggestions([]);
       setIsSuggestionsLoading(false);
+    } else {
+      setIsSuggestionsLoading(true);
     }
   }
 
-  //submit function
+  // The input keeps focus while arrow keys move through the suggestion list.
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (suggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveSuggestion((current) => (current + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveSuggestion(
+        (current) => (current <= 0 ? suggestions.length - 1 : current - 1)
+      );
+    } else if (event.key === "Enter" && activeSuggestion >= 0) {
+      event.preventDefault();
+      selectSuggestion(suggestions[activeSuggestion]);
+    } else if (event.key === "Escape") {
+      setSuggestions([]);
+      setActiveSuggestion(-1);
+    }
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -51,39 +116,55 @@ function SearchForm({ onSearch }: SearchFormProps) {
     }
 
     onSearch(trimmedCity);
-    setCity("");
-    setSuggestions([]);
+    clearSearch();
   }
 
   return (
     <form className="search-form" onSubmit={handleSubmit}>
-      <label className="sr-only" htmlFor="city-search">
+      <label className="sr-only" htmlFor={inputId}>
         Enter a city
       </label>
 
       <div className="search-input-wrapper">
         <input
-          id="city-search"
+          id={inputId}
           className="search-input"
           type="text"
           placeholder="Search for a city..."
           value={city}
           onChange={handleChange}
+          onKeyDown={handleKeyDown}
           autoComplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={suggestions.length > 0}
+          aria-controls={listId}
+          aria-activedescendant={
+            activeSuggestion >= 0
+              ? `${listId}-option-${activeSuggestion}`
+              : undefined
+          }
         />
 
         {isSuggestionsLoading && (
-          <p className="suggestions-loading">Searching...</p>
+          <p className="suggestions-loading" role="status">
+            Searching...
+          </p>
         )}
 
         {suggestions.length > 0 && (
-          <ul className="suggestion-list">
-            {suggestions.map((location) => (
-              <li key={location.id}>
+          <ul id={listId} className="suggestion-list" role="listbox">
+            {suggestions.map((location, index) => (
+              <li key={location.id} role="presentation">
                 <button
+                  id={`${listId}-option-${index}`}
                   type="button"
                   className="suggestion-item"
-                  onClick={() => handleSuggestionClick(location)}
+                  role="option"
+                  aria-selected={activeSuggestion === index}
+                  tabIndex={-1}
+                  onMouseEnter={() => setActiveSuggestion(index)}
+                  onClick={() => selectSuggestion(location)}
                 >
                   <strong>{location.name}</strong>
 

@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import CurrentWeather from "./components/CurrentWeather";
-import { getLocation, getCurrentWeather } from "./services/weatherApi";
+import {
+  getLocation,
+  getCurrentWeather,
+  WeatherApiError,
+} from "./services/weatherApi";
 import type { WeatherData } from "./types/weather";
 import { getWeatherInfo } from "./utils/weatherCode";
 import "./styles/app.css";
@@ -9,49 +13,80 @@ import Welcome from "./components/Welcome";
 import SearchForm from "./components/SearchForm";
 
 function App() {
+  // Location and weather are stored separately because they come from two APIs.
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     null
   );
-  //const [selectedCity, setSelectedCity] = useState("");
-  const [weather, setWeather] = useState<WeatherData | null>(null); //WeatherData | null meaning either there is data or no data
+  const [weather, setWeather] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Only the latest search is allowed to update the page.
+  const activeRequest = useRef<AbortController | null>(null);
   const weatherInfo = weather ? getWeatherInfo(weather.weatherCode) : null;
 
-  async function handleSearch(city: string) {
+  async function handleSearch(search: string | Location) {
+    activeRequest.current?.abort();
+    const controller = new AbortController();
+    activeRequest.current = controller;
+
     setIsLoading(true);
     setErrorMessage("");
 
     try {
-      const location = await getLocation(city);
+      const location =
+        typeof search === "string"
+          ? await getLocation(search, controller.signal)
+          : search;
 
       const weatherData = await getCurrentWeather(
         location.latitude,
-        location.longitude
+        location.longitude,
+        controller.signal
       );
-
-      /*console.log("Location:", location);
-      console.log("Weather:", weather);*/
 
       setSelectedLocation(location);
       setWeather(weatherData);
     } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
+
       setWeather(null);
       setSelectedLocation(null);
 
-      //if error occurs
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
+      // Show messages that describe the actual failure instead of one generic error.
+      if (
+        error instanceof WeatherApiError &&
+        error.code === "location-not-found"
+      ) {
+        setErrorMessage(
+          "City not found. Check the spelling or choose a suggestion."
+        );
+      } else if (
+        error instanceof WeatherApiError &&
+        error.code === "invalid-response"
+      ) {
+        setErrorMessage("Weather data is temporarily unavailable.");
       } else {
-        setErrorMessage("Something went wrong");
+        setErrorMessage(
+          "Could not connect to the weather service. Please try again."
+        );
       }
     } finally {
-      setIsLoading(false);
+      if (activeRequest.current === controller) {
+        activeRequest.current = null;
+        setIsLoading(false);
+      }
     }
   }
+
   function clearWeather() {
+    activeRequest.current?.abort();
+    activeRequest.current = null;
     setSelectedLocation(null);
     setWeather(null);
+    setIsLoading(false);
     setErrorMessage("");
   }
 
@@ -69,15 +104,13 @@ function App() {
       </header>
 
       <main className="app-main">
-        {!weather && !isLoading && !errorMessage && (
-          <Welcome onSearch={handleSearch} />
+        {!weather && !isLoading && (
+          <Welcome onSearch={handleSearch} errorMessage={errorMessage} />
         )}
 
-        {isLoading && <p>Loading weather...</p>}
-
-        {errorMessage && (
-          <p className="error-message" role="alert">
-            {errorMessage}
+        {isLoading && (
+          <p className="weather-loading" role="status">
+            Loading weather...
           </p>
         )}
 
