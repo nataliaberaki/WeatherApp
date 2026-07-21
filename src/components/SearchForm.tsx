@@ -12,6 +12,7 @@ function SearchForm({ onSearch }: SearchFormProps) {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(-1);
   const requestId = useRef(0);
+  const activeSuggestionRequest = useRef<AbortController | null>(null);
   const inputId = useId();
   const listId = useId();
 
@@ -25,6 +26,7 @@ function SearchForm({ onSearch }: SearchFormProps) {
 
     const currentRequest = ++requestId.current;
     const controller = new AbortController();
+    activeSuggestionRequest.current = controller;
 
     const timer = window.setTimeout(async () => {
       try {
@@ -43,6 +45,7 @@ function SearchForm({ onSearch }: SearchFormProps) {
         }
       } finally {
         if (requestId.current === currentRequest) {
+          activeSuggestionRequest.current = null;
           setIsSuggestionsLoading(false);
         }
       }
@@ -51,15 +54,25 @@ function SearchForm({ onSearch }: SearchFormProps) {
     return () => {
       window.clearTimeout(timer);
       controller.abort();
+
+      if (activeSuggestionRequest.current === controller) {
+        activeSuggestionRequest.current = null;
+      }
     };
   }, [city]);
 
-  function clearSearch() {
+  function dismissSuggestions() {
     requestId.current += 1;
-    setCity("");
+    activeSuggestionRequest.current?.abort();
+    activeSuggestionRequest.current = null;
     setSuggestions([]);
     setActiveSuggestion(-1);
     setIsSuggestionsLoading(false);
+  }
+
+  function clearSearch() {
+    dismissSuggestions();
+    setCity("");
   }
 
   function selectSuggestion(location: Location) {
@@ -72,6 +85,8 @@ function SearchForm({ onSearch }: SearchFormProps) {
     const value = event.target.value;
 
     requestId.current += 1;
+    activeSuggestionRequest.current?.abort();
+    activeSuggestionRequest.current = null;
     setCity(value);
     setActiveSuggestion(-1);
 
@@ -85,6 +100,11 @@ function SearchForm({ onSearch }: SearchFormProps) {
 
   // The input keeps focus while arrow keys move through the suggestion list.
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      dismissSuggestions();
+      return;
+    }
+
     if (suggestions.length === 0) {
       return;
     }
@@ -100,9 +120,6 @@ function SearchForm({ onSearch }: SearchFormProps) {
     } else if (event.key === "Enter" && activeSuggestion >= 0) {
       event.preventDefault();
       selectSuggestion(suggestions[activeSuggestion]);
-    } else if (event.key === "Escape") {
-      setSuggestions([]);
-      setActiveSuggestion(-1);
     }
   }
 
